@@ -127,6 +127,9 @@ end
 ---Run the next unprocessed testcase, if any, and when it finishes run the successive unprocessed testcase, if any
 function TCRunner:run_next_testcase()
 	if self.next_tc > #self.tcdata then
+		local sep = vim.fn.has("win32") and "\\" or "/"
+		local rc_exec = self.running_directory .. sep .. self.rc.exec
+		os.remove(rc_exec)
 		return
 	end
 	self.next_tc = self.next_tc + 1
