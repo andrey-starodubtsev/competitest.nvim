@@ -123,6 +123,30 @@ function TCRunner:run_testcase(tcindex)
 	end
 end
 
+local function rmdir(dir)
+	local d = luv.fs_opendir(dir)
+	if d then
+		while true do
+			local content = luv.fs_readdir(d, nil, 1)
+			if not content then
+				break
+			end
+			for _, entry in ipairs(content) do
+				if entry.name ~= "." or entry.name ~= ".." then
+					local path = dir .. "/" .. entry.name
+					if entry.type == 'directory' then
+						rmdir(path)
+					elseif entry.type == 'file' then
+						luv.fs_unlink(path)
+					end
+				end
+			end
+		end
+		luv.fs_closedir(d)
+	end
+	luv.fs_rmdir(dir)
+end
+
 ---@private
 ---Run the next unprocessed testcase, if any, and when it finishes run the successive unprocessed testcase, if any
 function TCRunner:run_next_testcase()
@@ -130,6 +154,12 @@ function TCRunner:run_next_testcase()
 		local sep = vim.fn.has("win32") and "\\" or "/"
 		local rc_exec = self.running_directory .. sep .. self.rc.exec
 		os.remove(rc_exec)
+		if vim.fn.has("mac") then
+			local dsym = rc_exec .. ".dSYM"
+			if vim.fn.isdirectory(dsym) then
+				rmdir(dsym)
+			end
+		end
 		return
 	end
 	self.next_tc = self.next_tc + 1
